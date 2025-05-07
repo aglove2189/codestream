@@ -1,0 +1,20 @@
+[project]
+name = "codestream"
+version = "0.1.0"
+description = "stream your codebase like an llm"
+readme = "README.md"
+authors = [
+    { name = "Aaron Glover", email = "aglove2189@gmail.com" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "pygments>=2.19.1",
+    "rich>=14.0.0",
+]
+
+[project.scripts]
+codestream = "codestream:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
