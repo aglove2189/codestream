@@ -160,7 +160,11 @@ def main():
     parser.add_argument("--theme", type=str, default="lightbulb", help="pygments theme name")
     args, _ = parser.parse_known_args()
 
-    run(args.dir, args.tokens, args.theme)
+    try:
+        run(args.dir, args.tokens, args.theme)
+    except KeyboardInterrupt:
+        return
+
 
 
 if __name__ == "__main__":
