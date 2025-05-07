@@ -3,8 +3,9 @@ name: Publish to pypi
 on: push
 
 jobs:
-  uv-example:
-    name: python
+  publish-pypi:
+    permissions:
+      id-token: write
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
