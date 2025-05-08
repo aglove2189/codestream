@@ -1,0 +1,15 @@
+repos:
+  - repo: local
+    hooks:
+      - id: lint
+        name: lint
+        entry: uv run ruff check . -n
+        language: python
+        types_or: [python, pyi]
+        pass_filenames: false
+      - id: format
+        name: format
+        entry: uv run ruff format . --check -n
+        language: python
+        types_or: [python, pyi]
+        pass_filenames: false

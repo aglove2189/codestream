@@ -5,7 +5,9 @@ import os
 import random
 import re
 import time
+import tempfile
 
+from git import Repo
 from pygments import lexers
 from pygments.styles import get_style_by_name
 from pygments.token import Token
@@ -49,7 +51,6 @@ def find_code_files(root_dir):
     """Recursively finds code files in a directory, skipping .gitignore patterns."""
     gitignore_path = os.path.join(root_dir, ".gitignore")
     patterns = parse_gitignore(gitignore_path)
-    console.print(f"Scanning [cyan]{os.path.abspath(root_dir)}[/cyan]")
 
     code_files = []
     for subdir, dirs, files in os.walk(root_dir):
@@ -106,11 +107,7 @@ def build_style_map(theme_name: str) -> tuple[dict, Style]:
     return style_map, pygments_style
 
 
-def display_stream(file_path, tokens_per_second=5, theme_name="lightbulb"):
-    """Reads and displays a file token by token with syntax highlighting."""
-    console.print(f"\n--- [bold cyan]{file_path}[/bold cyan] ---\n")
-    time.sleep(0.5)
-
+def get_tokens(file_path):
     with open(file_path, encoding="utf-8", errors="ignore") as f:
         content = f.read()
 
@@ -122,6 +119,13 @@ def display_stream(file_path, tokens_per_second=5, theme_name="lightbulb"):
         console.print("[yellow]No specific lexer found, using plain text.[/yellow]")
         # Use a basic lexer or our fallback tokenizer
         tokens = tokenize_code_basic(content)
+
+    return tokens
+
+
+def display_stream(file_path, tokens_per_second=5, theme_name="lightbulb"):
+    """Reads and displays a file token by token with syntax highlighting."""
+    tokens = get_tokens(file_path)
 
     style_map, pygments_style = build_style_map(theme_name)
 
@@ -142,20 +146,38 @@ def display_stream(file_path, tokens_per_second=5, theme_name="lightbulb"):
         time.sleep(tokens_per_second / 60)
 
 
-def run(dir, tokens_per_second, theme_name):
-    """Main loop to find files and start streaming."""
+def run(input_path, tokens_per_second, theme_name):
+    if is_git_url(input_path):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            Repo.clone_from(input_path, temp_dir, depth=1)
+            repo_name = input_path
+            console.print(f"Scanning [cyan]{repo_name}[/cyan]")
+            _run_on_dir(temp_dir, tokens_per_second, theme_name)
+    else:
+        repo_name = os.path.abspath(input_path)
+        console.print(f"Scanning [cyan]{repo_name}[/cyan]")
+        _run_on_dir(repo_name, tokens_per_second, theme_name)
+
+
+def _run_on_dir(dir, tokens_per_second, theme_name):
     code_files = find_code_files(dir)
     random.shuffle(code_files)
-
     console.print(f"Found [bold green]{len(code_files):,}[/bold green] files.")
 
     for code_file in itertools.cycle(code_files):
+        rel_path = os.path.relpath(code_file, dir) if dir else code_file
+        console.print(f"\n--- [bold cyan]{rel_path}[/bold cyan] ---\n")
+        time.sleep(0.5)
         display_stream(code_file, tokens_per_second=tokens_per_second, theme_name=theme_name)
+
+
+def is_git_url(path_or_url):
+    return path_or_url.startswith("http") or path_or_url.endswith(".git")
 
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("dir", type=str, default=".", help="Directory of source code")
+    parser.add_argument("dir", type=str, default=".", help="Directory of codebase or git repo URL")
     parser.add_argument("-t", "--tokens", type=int, default=5, help="Tokens per second")
     parser.add_argument("--theme", type=str, default="lightbulb", help="pygments theme name")
     args, _ = parser.parse_known_args()
@@ -164,7 +186,6 @@ def main():
         run(args.dir, args.tokens, args.theme)
     except KeyboardInterrupt:
         return
-
 
 
 if __name__ == "__main__":
