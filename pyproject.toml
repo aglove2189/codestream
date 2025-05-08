@@ -1,6 +1,6 @@
 [project]
 name = "codestream"
-version = "0.1.1"
+version = "0.1.2"
 description = "stream your codebase like an llm"
 readme = "README.md"
 authors = [
